@@ -7,7 +7,8 @@ import {
   insertSubmissionSchema, 
   insertFeedbackSchema,
   insertClassSchema,
-  insertClassEnrollmentSchema
+  insertClassEnrollmentSchema,
+  Assignment
 } from "@shared/schema";
 import { gradeSubmission } from "./ai";
 import { generateChatResponse, gradeAssignment, generateImprovement } from "./gemini";
@@ -125,7 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const classes = await storage.getClassesByTeacher(req.user.id);
         const classIds = classes.map(cls => cls.id);
         
-        let assignments = [];
+        let assignments: Assignment[] = [];
         for (const classId of classIds) {
           const classAssignments = await storage.getAssignmentsForClass(classId);
           assignments = assignments.concat(classAssignments);
@@ -137,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const classes = await storage.getClassesForStudent(req.user.id);
         const classIds = classes.map(cls => cls.id);
         
-        let assignments = [];
+        let assignments: Assignment[] = [];
         for (const classId of classIds) {
           const classAssignments = await storage.getAssignmentsForClass(classId);
           assignments = assignments.concat(classAssignments);
@@ -167,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const classes = await storage.getClassesForStudent(req.user.id);
         const classIds = classes.map(cls => cls.id);
         
-        let assignments = [];
+        let assignments: Assignment[] = [];
         for (const classId of classIds) {
           const classAssignments = await storage.getAssignmentsForClass(classId);
           assignments = assignments.concat(classAssignments);
@@ -189,7 +190,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      console.log("Assignment data received:", JSON.stringify(req.body));
+      
       const validatedData = insertAssignmentSchema.parse(req.body);
+      console.log("Validated assignment data:", JSON.stringify(validatedData));
       
       // Verify teacher owns the class
       const cls = await storage.getClass(validatedData.classId);
@@ -201,8 +205,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(201).json(newAssignment);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Zod validation error:", JSON.stringify(error.errors));
         return res.status(400).json({ message: "Invalid assignment data", errors: error.errors });
       }
+      console.error("Assignment creation error:", error);
       return res.status(500).json({ message: "Failed to create assignment" });
     }
   });

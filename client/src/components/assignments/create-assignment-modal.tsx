@@ -23,10 +23,21 @@ type CreateAssignmentModalProps = {
 const createAssignmentSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
-  classId: z.number().or(z.string().transform(value => parseInt(value, 10))),
+  classId: z.coerce.number(), // Coerce classId to number regardless of input type
   type: z.string().min(1, "Type is required"),
   dueDate: z.string().min(1, "Due date is required")
-    .transform(value => new Date(value).toISOString()), // Convert to ISO string for the server
+    .transform(value => {
+      try {
+        // Create a date object from the input string (YYYY-MM-DD format from input[type="date"])
+        const date = new Date(value);
+        // Set the time to noon to avoid timezone issues
+        date.setHours(12, 0, 0, 0);
+        return date.toISOString();
+      } catch (e) {
+        console.error("Date parsing error:", e);
+        return new Date().toISOString(); // Fallback to current date
+      }
+    }),
   status: z.string().default("open"),
   rubric: z.any().optional(), // Make rubric optional
 });
@@ -80,6 +91,7 @@ export default function CreateAssignmentModal({ isOpen, onClose }: CreateAssignm
   });
 
   const onSubmit = (data: FormValues) => {
+    console.log("Submitting assignment data:", data);
     createMutation.mutate(data);
   };
 

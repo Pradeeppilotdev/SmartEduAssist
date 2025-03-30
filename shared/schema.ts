@@ -71,7 +71,21 @@ export const feedbacks = pgTable("feedbacks", {
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertClassSchema = createInsertSchema(classes).omit({ id: true, createdAt: true });
 export const insertClassEnrollmentSchema = createInsertSchema(classEnrollments).omit({ id: true, createdAt: true });
-export const insertAssignmentSchema = createInsertSchema(assignments).omit({ id: true, createdAt: true });
+// Custom assignment schema with improved date handling
+export const insertAssignmentSchema = createInsertSchema(assignments)
+  .omit({ id: true, createdAt: true })
+  .transform((data) => {
+    // Ensure dueDate is a valid Date object
+    if (typeof data.dueDate === 'string') {
+      try {
+        // Try to convert the string to a Date object
+        data.dueDate = new Date(data.dueDate);
+      } catch (e) {
+        console.error("Error converting dueDate:", e);
+      }
+    }
+    return data;
+  });
 export const insertSubmissionSchema = createInsertSchema(submissions).omit({ id: true, submittedAt: true });
 export const insertFeedbackSchema = createInsertSchema(feedbacks).omit({ id: true, createdAt: true, updatedAt: true });
 
