@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Loader2, UserPlus, Search, Users } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { User } from "@shared/schema";
+import { User, Class } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 
 export default function StudentsPage() {
   const { user } = useAuth();
@@ -35,20 +35,23 @@ export default function StudentsPage() {
   const [selectedStudent, setSelectedStudent] = useState<number | null>(null);
 
   // Fetch classes taught by the teacher
-  const { data: classes, isLoading: classesLoading } = useQuery({
+  const { data: classes = [], isLoading: classesLoading } = useQuery<Class[]>({
     queryKey: ['/api/classes'],
+    queryFn: getQueryFn({ on401: "throw" }),
     enabled: user?.role === 'teacher'
   });
 
   // Fetch students
-  const { data: students, isLoading: studentsLoading } = useQuery<User[]>({
+  const { data: students = [], isLoading: studentsLoading } = useQuery<User[]>({
     queryKey: ['/api/classes', selectedClass, 'students'],
+    queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!selectedClass,
   });
 
   // Fetch all students for enrollment
-  const { data: allStudents, isLoading: allStudentsLoading } = useQuery<User[]>({
+  const { data: allStudents = [], isLoading: allStudentsLoading } = useQuery<User[]>({
     queryKey: ['/api/users/students'],
+    queryFn: getQueryFn({ on401: "throw" }),
     enabled: isEnrollDialogOpen,
   });
 
@@ -132,7 +135,7 @@ export default function StudentsPage() {
                   <SelectValue placeholder="Select a class" />
                 </SelectTrigger>
                 <SelectContent>
-                  {classes?.map((cls) => (
+                  {classes.map((cls: Class) => (
                     <SelectItem key={cls.id} value={cls.id.toString()}>
                       {cls.name}
                     </SelectItem>
