@@ -61,6 +61,12 @@ export default function Sidebar() {
               active={location === '/'} 
             />
             <NavLink 
+              href="/classes" 
+              icon="ri-folders-line" 
+              text="Classes" 
+              active={location === '/classes'} 
+            />
+            <NavLink 
               href="/assignments" 
               icon="ri-book-open-line" 
               text="Assignments" 

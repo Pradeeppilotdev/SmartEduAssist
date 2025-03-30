@@ -48,6 +48,14 @@ export default function MobileNav({ onMenuToggle }: MobileNavProps) {
               <span className="text-xs mt-1">Dashboard</span>
             </a>
           </Link>
+          <Link href="/classes">
+            <a className={`flex-1 flex flex-col items-center py-3 ${location === '/classes' 
+              ? 'text-primary-600 border-t-2 border-primary-500' 
+              : 'text-gray-500'}`}>
+              <i className="ri-folders-line text-xl"></i>
+              <span className="text-xs mt-1">Classes</span>
+            </a>
+          </Link>
           <Link href="/assignments">
             <a className={`flex-1 flex flex-col items-center py-3 ${location === '/assignments' 
               ? 'text-primary-600 border-t-2 border-primary-500' 
@@ -62,14 +70,6 @@ export default function MobileNav({ onMenuToggle }: MobileNavProps) {
               : 'text-gray-500'}`}>
               <i className="ri-user-follow-line text-xl"></i>
               <span className="text-xs mt-1">Students</span>
-            </a>
-          </Link>
-          <Link href="/analytics">
-            <a className={`flex-1 flex flex-col items-center py-3 ${location === '/analytics' 
-              ? 'text-primary-600 border-t-2 border-primary-500' 
-              : 'text-gray-500'}`}>
-              <i className="ri-pie-chart-line text-xl"></i>
-              <span className="text-xs mt-1">Analytics</span>
             </a>
           </Link>
         </div>

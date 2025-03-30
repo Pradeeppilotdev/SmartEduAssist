@@ -7,6 +7,7 @@ import { ProtectedRoute } from "./lib/protected-route";
 import DashboardPage from "@/pages/dashboard-page";
 import AssignmentsPage from "@/pages/assignments-page";
 import StudentsPage from "@/pages/students-page";
+import ClassesPage from "@/pages/classes-page";
 import AnalyticsPage from "@/pages/analytics-page";
 import ReviewSubmissionPage from "@/pages/review-submission-page";
 import AppLayout from "@/layouts/app-layout";
@@ -23,6 +24,12 @@ function Router() {
       <ProtectedRoute path="/" component={() => (
         <AppLayout>
           <DashboardPage />
+        </AppLayout>
+      )} />
+      
+      <ProtectedRoute path="/classes" component={() => (
+        <AppLayout>
+          <ClassesPage />
         </AppLayout>
       )} />
       
