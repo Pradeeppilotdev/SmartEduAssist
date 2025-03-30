@@ -2,10 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { SubmissionWithDetails } from "@shared/schema";
 import { Link } from "wouter";
 import { Loader2 } from "lucide-react";
+import { getQueryFn } from "@/lib/queryClient";
 
 export default function PendingReviewCard() {
   const { data: pendingReviews, isLoading, error } = useQuery<SubmissionWithDetails[]>({
     queryKey: ['/api/submissions/pending'],
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   if (isLoading) {

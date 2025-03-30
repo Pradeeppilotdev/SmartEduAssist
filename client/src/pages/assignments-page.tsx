@@ -12,6 +12,7 @@ import { Assignment } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import CreateAssignmentModal from "@/components/assignments/create-assignment-modal";
 import { format } from "date-fns";
+import { getQueryFn } from "@/lib/queryClient";
 
 function AssignmentCard({ assignment }: { assignment: Assignment }) {
   // Helper for displaying status badge with appropriate color
@@ -83,6 +84,7 @@ export default function AssignmentsPage() {
 
   const { data: assignments, isLoading, error } = useQuery<Assignment[]>({
     queryKey: ['/api/assignments'],
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   const filteredAssignments = assignments?.filter(assignment => {

@@ -3,10 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Assignment, AssignmentWithStats } from "@shared/schema";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
+import { getQueryFn } from "@/lib/queryClient";
 
 export default function AssignmentsTable() {
   const { data: assignments, isLoading, error } = useQuery<AssignmentWithStats[]>({
     queryKey: ['/api/assignments/recent'],
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   if (isLoading) {
