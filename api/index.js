@@ -103,23 +103,48 @@ app.post('/api/ai/improve', async (req, res) => {
 
 // Add authentication endpoints
 app.post('/api/register', (req, res) => {
-  // This is a placeholder endpoint for Vercel deployment
-  res.status(201).json({
-    id: 1,
-    username: req.body.username,
-    name: req.body.name,
-    role: req.body.role || 'teacher'
-  });
+  try {
+    const { username, firstName, lastName, password, role } = req.body;
+    // Validate required fields
+    if (!username || !password || !firstName || !lastName) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+    
+    // For demonstration purposes in Vercel deployment
+    res.status(201).json({
+      id: 1,
+      username,
+      firstName,
+      lastName,
+      role: role || 'teacher'
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Registration failed' });
+  }
 });
 
 app.post('/api/login', (req, res) => {
-  // This is a placeholder endpoint for Vercel deployment
-  res.status(200).json({
-    id: 1,
-    username: req.body.username,
-    name: "Demo User",
-    role: 'teacher'
-  });
+  try {
+    const { username, password } = req.body;
+    
+    // Validate required fields
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
+    }
+    
+    // Demo login for Vercel deployment
+    res.status(200).json({
+      id: 1,
+      username,
+      firstName: 'Demo',
+      lastName: 'User',
+      role: 'teacher'
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(401).json({ message: 'Invalid username or password' });
+  }
 });
 
 app.post('/api/logout', (req, res) => {
@@ -127,8 +152,129 @@ app.post('/api/logout', (req, res) => {
 });
 
 app.get('/api/user', (req, res) => {
-  // For testing, return an unauthorized status
-  res.status(401).json({ message: 'Not authenticated' });
+  // In production, this would check for a valid session
+  // For Vercel demo, we'll return a demo user
+  const authenticated = false; // Change to true to simulate authentication
+  
+  if (!authenticated) {
+    return res.status(401).json({ message: 'Not authenticated' });
+  }
+  
+  res.json({
+    id: 1,
+    username: 'demo_user',
+    firstName: 'Demo',
+    lastName: 'User',
+    role: 'teacher'
+  });
+});
+
+// Add API endpoints for classes
+app.get('/api/classes', (req, res) => {
+  // Return sample classes for demonstration
+  res.json([
+    {
+      id: 1,
+      name: 'Introduction to Computer Science',
+      description: 'Fundamentals of computer science and programming',
+      teacherId: 1,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 2,
+      name: 'Data Structures and Algorithms',
+      description: 'Advanced data structures and algorithm analysis',
+      teacherId: 1,
+      createdAt: new Date().toISOString()
+    }
+  ]);
+});
+
+app.post('/api/classes', (req, res) => {
+  try {
+    const { name, description } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ message: 'Class name is required' });
+    }
+    
+    res.status(201).json({
+      id: Math.floor(Math.random() * 1000) + 10,
+      name,
+      description: description || '',
+      teacherId: 1,
+      createdAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error creating class:', error);
+    res.status(500).json({ message: 'Failed to create class' });
+  }
+});
+
+// Add API endpoints for assignments
+app.get('/api/assignments', (req, res) => {
+  // Return sample assignments for demonstration
+  res.json([
+    {
+      id: 1,
+      title: 'Programming Basics',
+      description: 'Create a simple program demonstrating variables and control flow',
+      classId: 1,
+      type: 'essay',
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      createdAt: new Date().toISOString(),
+      status: 'open'
+    }
+  ]);
+});
+
+app.get('/api/assignments/recent', (req, res) => {
+  // Return sample recent assignments with stats
+  res.json([
+    {
+      id: 1,
+      title: 'Programming Basics',
+      description: 'Create a simple program demonstrating variables and control flow',
+      classId: 1,
+      type: 'essay',
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      createdAt: new Date().toISOString(),
+      status: 'open',
+      className: 'Introduction to Computer Science',
+      submissionCount: 5,
+      totalStudents: 15
+    }
+  ]);
+});
+
+app.post('/api/assignments', (req, res) => {
+  try {
+    const { title, description, classId, type, dueDate, status } = req.body;
+    
+    if (!title || !classId || !type || !dueDate) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+    
+    res.status(201).json({
+      id: Math.floor(Math.random() * 1000) + 10,
+      title,
+      description: description || '',
+      classId,
+      type,
+      dueDate: new Date(dueDate).toISOString(),
+      createdAt: new Date().toISOString(),
+      status: status || 'open'
+    });
+  } catch (error) {
+    console.error('Error creating assignment:', error);
+    res.status(500).json({ message: 'Failed to create assignment' });
+  }
+});
+
+// Add API endpoints for submissions
+app.get('/api/submissions/pending', (req, res) => {
+  // Return empty array for demo (no pending submissions)
+  res.json([]);
 });
 
 // Add a health check endpoint
