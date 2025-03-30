@@ -151,14 +151,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/assignments/recent", async (req, res) => {
-    if (!req.isAuthenticated() || req.user.role !== 'teacher') {
-      return res.status(401).json({ message: "Only teachers can view recent assignments" });
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
     }
     
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
-      const recentAssignments = await storage.getRecentAssignments(req.user.id, limit);
-      return res.json(recentAssignments);
+      
+      if (req.user.role === 'teacher') {
+        const recentAssignments = await storage.getRecentAssignments(req.user.id, limit);
+        return res.json(recentAssignments);
+      } else {
+        // For students, return their assignments
+        const classes = await storage.getClassesForStudent(req.user.id);
+        const classIds = classes.map(cls => cls.id);
+        
+        let assignments = [];
+        for (const classId of classIds) {
+          const classAssignments = await storage.getAssignmentsForClass(classId);
+          assignments = assignments.concat(classAssignments);
+        }
+        
+        // Sort by most recent and limit
+        assignments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return res.json(assignments.slice(0, limit));
+      }
     } catch (error) {
       console.error("Error fetching recent assignments:", error);
       return res.status(500).json({ message: "Failed to fetch recent assignments" });
@@ -452,6 +469,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating feedback:", error);
       return res.status(500).json({ message: "Failed to update feedback" });
+    }
+  });
+  
+  // Student-specific routes
+  app.get("/api/student/assignments", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.role !== 'student') {
+      return res.status(401).json({ message: "Only students can access this endpoint" });
+    }
+    
+    try {
+      const classes = await storage.getClassesForStudent(req.user.id);
+      const classIds = classes.map(cls => cls.id);
+      
+      let assignments = [];
+      for (const classId of classIds) {
+        const classAssignments = await storage.getAssignmentsForClass(classId);
+        assignments = assignments.concat(classAssignments);
+      }
+      
+      return res.json(assignments);
+    } catch (error) {
+      console.error("Error fetching student assignments:", error);
+      return res.status(500).json({ message: "Failed to fetch assignments" });
+    }
+  });
+  
+  // Get student stats for dashboard
+  app.get("/api/student/stats", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.role !== 'student') {
+      return res.status(401).json({ message: "Only students can access this endpoint" });
+    }
+    
+    try {
+      // Get all assignments for this student
+      const classes = await storage.getClassesForStudent(req.user.id);
+      const classIds = classes.map(cls => cls.id);
+      
+      let assignments = [];
+      for (const classId of classIds) {
+        const classAssignments = await storage.getAssignmentsForClass(classId);
+        assignments = assignments.concat(classAssignments);
+      }
+      
+      // Get all submissions for this student
+      const submissions = await storage.getSubmissionsByStudent(req.user.id);
+      
+      // Calculate pending assignments (assigned but not submitted)
+      const submittedAssignmentIds = submissions.map(sub => sub.assignmentId);
+      const pendingAssignments = assignments.filter(
+        assignment => !submittedAssignmentIds.includes(assignment.id)
+      );
+      
+      // Calculate completed assignments (submitted and graded)
+      const completedSubmissions = submissions.filter(
+        submission => submission.status === 'ai_graded' || submission.status === 'teacher_reviewed'
+      );
+      
+      // Get feedback for graded submissions to calculate average
+      let totalScore = 0;
+      let gradedCount = 0;
+      
+      for (const submission of completedSubmissions) {
+        const feedback = await storage.getFeedbackBySubmission(submission.id);
+        if (feedback) {
+          // Use teacher score if available, otherwise AI score
+          const score = feedback.teacherScore !== null ? feedback.teacherScore : feedback.aiScore;
+          if (score !== null) {
+            totalScore += score;
+            gradedCount++;
+          }
+        }
+      }
+      
+      const averageScore = gradedCount > 0 ? Math.round(totalScore / gradedCount) : null;
+      
+      // Mock data for class rank (would require more complex calculations in a real app)
+      const classRank = "5th";
+      
+      return res.json({
+        pendingAssignments: pendingAssignments.length,
+        completedAssignments: completedSubmissions.length,
+        averageScore,
+        classRank
+      });
+    } catch (error) {
+      console.error("Error fetching student stats:", error);
+      return res.status(500).json({ message: "Failed to fetch student statistics" });
     }
   });
 

@@ -23,7 +23,12 @@ export default function DashboardPage() {
   
   const { data: recentAssignments } = useQuery({
     queryKey: ['/api/assignments/recent'],
-    enabled: isTeacher,
+  });
+  
+  // Student specific queries
+  const { data: studentStats } = useQuery({
+    queryKey: ['/api/student/stats'],
+    enabled: !isTeacher,
   });
 
   return (
@@ -82,25 +87,25 @@ export default function DashboardPage() {
           <>
             <StatCard 
               label="Pending Assignments" 
-              value={3}
+              value={studentStats?.pendingAssignments || 0}
               icon={<FileText className="text-xl" />}
               color="primary"
             />
             <StatCard 
               label="Completed Assignments" 
-              value={12}
+              value={studentStats?.completedAssignments || 0}
               icon={<FileText className="text-xl" />}
               color="green"
             />
             <StatCard 
               label="Your Average" 
-              value="82%"
+              value={studentStats?.averageScore ? `${studentStats.averageScore}%` : "N/A"}
               icon={<BarChart2 className="text-xl" />}
               color="secondary"
             />
             <StatCard 
               label="Class Rank" 
-              value="5th"
+              value={studentStats?.classRank || "N/A"}
               icon={<PieChart className="text-xl" />}
               color="orange"
             />
