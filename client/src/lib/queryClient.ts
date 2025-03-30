@@ -2,10 +2,26 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 // Get the base URL for API requests based on environment
 const getBaseUrl = () => {
-  if (typeof window === 'undefined') return ''; // Server-side rendering
-  if (window.location.hostname === 'localhost') return '';
-  if (window.location.hostname.includes('vercel.app')) return '';
-  return ''; // Default to relative URLs
+  // For server-side rendering
+  if (typeof window === 'undefined') return ''; 
+  
+  // For local development
+  if (window.location.hostname === 'localhost' || 
+      window.location.hostname === '0.0.0.0' || 
+      window.location.hostname.includes('.replit.dev')) {
+    return '';  // Use relative URLs for local development
+  }
+  
+  // For Vercel deployment - check for the current domain
+  if (window.location.hostname.includes('vercel.app') || 
+      window.location.hostname.includes('grade-assist-ai') ||
+      window.location.hostname.includes('smart-edu-assist')) {
+    // Using relative URLs on Vercel since API routes are in the same domain
+    return '';
+  }
+  
+  // Default fallback to relative URLs
+  return '';
 };
 
 const BASE_URL = getBaseUrl();

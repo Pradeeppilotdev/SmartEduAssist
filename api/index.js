@@ -137,8 +137,11 @@ app.post('/api/logout', (req, res) => {
 
 app.get('/api/user', (req, res) => {
   // In production, this would check for a valid session
-  // For Vercel demo, we'll return a demo user
-  const authenticated = false; // Change to true to simulate authentication
+  // For Vercel demo, we'll return a demo user if the demo mode is enabled
+  
+  // This is a simple way to enable "demo mode" for the serverless function
+  // In a real app, you'd use proper session/auth management
+  const authenticated = true; // Enable demo mode for the deployed app
   
   if (!authenticated) {
     return res.status(401).json({ message: 'Not authenticated' });

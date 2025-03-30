@@ -28,6 +28,9 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
+// Check if the application should run in demonstration mode
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "grades-assistant-secret-key",
@@ -95,7 +98,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: Error | null, user: SelectUser | false, info: any) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid username or password" });
       
@@ -116,9 +119,29 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+    // Set appropriate headers to ensure proper JSON response
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    
+    // If demo mode is enabled, automatically provide a demo teacher user
+    if (DEMO_MODE) {
+      return res.send(JSON.stringify({
+        id: 999,
+        username: 'demo_teacher',
+        firstName: 'Demo',
+        lastName: 'Teacher',
+        role: 'teacher',
+        createdAt: new Date().toISOString()
+      }));
+    }
+    
+    // Normal authentication check for non-demo mode
+    if (!req.isAuthenticated()) {
+      return res.status(401).send('Unauthorized');
+    }
+    
     // Don't send password back to client
     const { password, ...userWithoutPassword } = req.user;
-    res.json(userWithoutPassword);
+    res.send(JSON.stringify(userWithoutPassword));
   });
 }

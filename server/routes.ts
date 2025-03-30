@@ -20,6 +20,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Class routes
   app.get("/api/classes", async (req, res) => {
+    // Check for demo mode first
+    if (process.env.DEMO_MODE === 'true') {
+      // Return sample classes for demonstration
+      return res.json([
+        {
+          id: 1,
+          name: 'Introduction to Computer Science',
+          description: 'Fundamentals of computer science and programming',
+          teacherId: 999,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 2,
+          name: 'Data Structures and Algorithms',
+          description: 'Advanced data structures and algorithm analysis',
+          teacherId: 999,
+          createdAt: new Date().toISOString()
+        }
+      ]);
+    }
+    
+    // Regular authentication check for non-demo mode
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
@@ -118,6 +140,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Assignment routes
   app.get("/api/assignments", async (req, res) => {
+    // Check for demo mode first
+    if (process.env.DEMO_MODE === 'true') {
+      // Return sample assignments for demonstration
+      return res.json([
+        {
+          id: 1,
+          title: 'Programming Basics',
+          description: 'Create a simple program demonstrating variables and control flow',
+          classId: 1,
+          type: 'essay',
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date().toISOString(),
+          status: 'open'
+        },
+        {
+          id: 2,
+          title: 'Data Structure Implementation',
+          description: 'Implement a binary search tree with insertion and traversal methods',
+          classId: 2,
+          type: 'code',
+          dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date().toISOString(),
+          status: 'open'
+        }
+      ]);
+    }
+    
+    // Regular authentication check for non-demo mode
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
@@ -153,6 +203,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/assignments/recent", async (req, res) => {
+    // Check for demo mode first
+    if (process.env.DEMO_MODE === 'true') {
+      // Return sample recent assignments with stats for demonstration
+      return res.json([
+        {
+          id: 1,
+          title: 'Programming Basics',
+          description: 'Create a simple program demonstrating variables and control flow',
+          classId: 1,
+          type: 'essay',
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date().toISOString(),
+          status: 'open',
+          className: 'Introduction to Computer Science',
+          submissionCount: 5,
+          totalStudents: 15
+        },
+        {
+          id: 2,
+          title: 'Data Structure Implementation',
+          description: 'Implement a binary search tree with insertion and traversal methods',
+          classId: 2,
+          type: 'code',
+          dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date().toISOString(),
+          status: 'open',
+          className: 'Data Structures and Algorithms',
+          submissionCount: 3,
+          totalStudents: 12
+        }
+      ]);
+    }
+    
+    // Regular authentication check for non-demo mode
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Authentication required" });
     }
@@ -175,7 +259,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Sort by most recent and limit
-        assignments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        assignments.sort((a, b) => {
+          const dateA = new Date(b.createdAt).getTime();
+          const dateB = new Date(a.createdAt).getTime();
+          return dateA - dateB;
+        });
         return res.json(assignments.slice(0, limit));
       }
     } catch (error) {
@@ -251,6 +339,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Submission routes
   app.get("/api/submissions/pending", async (req, res) => {
+    // Check for demo mode first
+    if (process.env.DEMO_MODE === 'true') {
+      // Return empty array for demo (no pending submissions)
+      // In a real application, there would be actual submissions pending teacher review here
+      return res.json([]);
+    }
+    
+    // Regular authentication check for non-demo mode
     if (!req.isAuthenticated() || req.user.role !== 'teacher') {
       return res.status(401).json({ message: "Only teachers can view pending reviews" });
     }
@@ -568,7 +664,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Google Gemini AI endpoints
   app.post("/api/ai/chat", async (req, res) => {
-    if (!req.isAuthenticated()) {
+    // Check for demo mode - in demo mode we don't require authentication
+    if (process.env.DEMO_MODE !== 'true' && !req.isAuthenticated()) {
       return res.status(401).json({ message: "Authentication required" });
     }
     
@@ -588,7 +685,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/ai/grade", async (req, res) => {
-    if (!req.isAuthenticated() || req.user.role !== 'teacher') {
+    // Check for demo mode - in demo mode we don't require authentication
+    if (process.env.DEMO_MODE !== 'true' && (!req.isAuthenticated() || req.user.role !== 'teacher')) {
       return res.status(401).json({ message: "Only teachers can access this endpoint" });
     }
     
@@ -610,7 +708,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/ai/improve", async (req, res) => {
-    if (!req.isAuthenticated()) {
+    // Check for demo mode - in demo mode we don't require authentication
+    if (process.env.DEMO_MODE !== 'true' && !req.isAuthenticated()) {
       return res.status(401).json({ message: "Authentication required" });
     }
     
@@ -631,6 +730,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Health check endpoint for API status
+  app.get("/api/health", (req, res) => {
+    // Force content type to be JSON to ensure the browser doesn't treat this as HTML
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    
+    // Get API key status
+    const geminiKeyExists = typeof process.env.GEMINI_API_KEY === 'string' && process.env.GEMINI_API_KEY.length > 0;
+    const openAIKeyExists = typeof process.env.OPENAI_API_KEY === 'string' && process.env.OPENAI_API_KEY.length > 0;
+    
+    // Send the health status
+    res.send(JSON.stringify({
+      status: "ok",
+      version: "1.0.0",
+      environment: process.env.NODE_ENV || "development",
+      demo_mode: process.env.DEMO_MODE === "true",
+      api_status: {
+        gemini: geminiKeyExists,
+        openai: openAIKeyExists
+      }
+    }));
+  });
+  
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;
