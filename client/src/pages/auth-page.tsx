@@ -302,43 +302,43 @@ export default function AuthPage() {
       </div>
       
       {/* Hero Section - visible on larger screens */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-r from-primary-600 to-primary-800 text-white p-8 flex-col justify-center">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-r from-primary-50 to-primary-100 text-gray-900 p-8 flex-col justify-center">
         <div className="max-w-lg mx-auto">
-          <h1 className="text-4xl font-bold mb-4">GradeAssist AI</h1>
-          <h2 className="text-2xl font-semibold mb-4">Transforming Education with AI</h2>
-          <p className="mb-6 text-lg">
+          <h1 className="text-4xl font-bold mb-4 text-primary-600">GradeAssist AI</h1>
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">Transforming Education with AI</h2>
+          <p className="mb-6 text-lg text-gray-700">
             An innovative platform that uses AI to grade assignments and provide personalized feedback,
             saving teachers time and helping students learn more effectively.
           </p>
           
           <div className="space-y-4">
             <div className="flex items-start">
-              <div className="flex-shrink-0 bg-white bg-opacity-20 p-2 rounded-full">
+              <div className="flex-shrink-0 bg-primary-600 text-white p-2 rounded-full">
                 <i className="ri-time-line text-xl"></i>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-semibold">Save Time</h3>
-                <p>Automate grading and feedback to focus more on teaching</p>
+                <h3 className="text-lg font-semibold text-gray-800">Save Time</h3>
+                <p className="text-gray-700">Automate grading and feedback to focus more on teaching</p>
               </div>
             </div>
             
             <div className="flex items-start">
-              <div className="flex-shrink-0 bg-white bg-opacity-20 p-2 rounded-full">
+              <div className="flex-shrink-0 bg-primary-600 text-white p-2 rounded-full">
                 <i className="ri-user-settings-line text-xl"></i>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-semibold">Personalized Learning</h3>
-                <p>Provide detailed, individualized feedback to every student</p>
+                <h3 className="text-lg font-semibold text-gray-800">Personalized Learning</h3>
+                <p className="text-gray-700">Provide detailed, individualized feedback to every student</p>
               </div>
             </div>
             
             <div className="flex items-start">
-              <div className="flex-shrink-0 bg-white bg-opacity-20 p-2 rounded-full">
+              <div className="flex-shrink-0 bg-primary-600 text-white p-2 rounded-full">
                 <i className="ri-bar-chart-line text-xl"></i>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-semibold">Data-Driven Insights</h3>
-                <p>Identify learning gaps and track student progress over time</p>
+                <h3 className="text-lg font-semibold text-gray-800">Data-Driven Insights</h3>
+                <p className="text-gray-700">Identify learning gaps and track student progress over time</p>
               </div>
             </div>
           </div>

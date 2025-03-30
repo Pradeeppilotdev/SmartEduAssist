@@ -9,7 +9,8 @@ import StudentsPage from "@/pages/students-page";
 import AnalyticsPage from "@/pages/analytics-page";
 import ReviewSubmissionPage from "@/pages/review-submission-page";
 import AppLayout from "@/layouts/app-layout";
-import { AuthProvider } from "./hooks/use-auth";
+import { AuthProvider, useAuth } from "./hooks/use-auth";
+import GeminiChatbot from "@/components/chat/gemini-chatbot";
 
 function Router() {
   return (
@@ -52,8 +53,20 @@ function App() {
     <AuthProvider>
       <Router />
       <Toaster />
+      <GeminiChatbotWrapper />
     </AuthProvider>
   );
+}
+
+// Wrapper that only shows the chatbot for authenticated users
+function GeminiChatbotWrapper() {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return null;
+  }
+  
+  return <GeminiChatbot />;
 }
 
 export default App;

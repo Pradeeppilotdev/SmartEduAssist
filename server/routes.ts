@@ -10,6 +10,7 @@ import {
   insertClassEnrollmentSchema
 } from "@shared/schema";
 import { gradeSubmission } from "./ai";
+import { generateChatResponse, gradeAssignment, generateImprovement } from "./gemini";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -556,6 +557,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching student stats:", error);
       return res.status(500).json({ message: "Failed to fetch student statistics" });
+    }
+  });
+
+  // Google Gemini AI endpoints
+  app.post("/api/ai/chat", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    try {
+      const { messages } = req.body;
+      
+      if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ message: "Invalid request format. 'messages' array is required." });
+      }
+      
+      const response = await generateChatResponse(messages);
+      
+      if (!response.success) {
+        return res.status(500).json({ message: response.error || "Failed to generate chat response" });
+      }
+      
+      return res.json({ response: response.text });
+    } catch (error) {
+      console.error("Error in chat endpoint:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/ai/grade", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.role !== 'teacher') {
+      return res.status(401).json({ message: "Only teachers can access this endpoint" });
+    }
+    
+    try {
+      const { submissionText, assignmentPrompt, rubric } = req.body;
+      
+      if (!submissionText || !assignmentPrompt || !rubric) {
+        return res.status(400).json({ 
+          message: "Missing required fields. 'submissionText', 'assignmentPrompt', and 'rubric' are required." 
+        });
+      }
+      
+      const result = await gradeAssignment(submissionText, assignmentPrompt, rubric);
+      
+      if (!result.success) {
+        return res.status(500).json({ 
+          message: result.error || "Failed to grade assignment",
+          rawResponse: result.rawResponse 
+        });
+      }
+      
+      return res.json(result.data);
+    } catch (error) {
+      console.error("Error in grading endpoint:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/ai/improve", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    try {
+      const { submissionText, assignmentPrompt, feedbackText } = req.body;
+      
+      if (!submissionText || !assignmentPrompt || !feedbackText) {
+        return res.status(400).json({ 
+          message: "Missing required fields. 'submissionText', 'assignmentPrompt', and 'feedbackText' are required." 
+        });
+      }
+      
+      const result = await generateImprovement(submissionText, assignmentPrompt, feedbackText);
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error || "Failed to generate improvement suggestions" });
+      }
+      
+      return res.json({ suggestions: result.text });
+    } catch (error) {
+      console.error("Error in improvement endpoint:", error);
+      return res.status(500).json({ message: "Internal server error" });
     }
   });
 
