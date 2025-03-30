@@ -7,7 +7,7 @@ import { getQueryFn } from "@/lib/queryClient";
 export default function PendingReviewCard() {
   const { data: pendingReviews, isLoading, error } = useQuery<SubmissionWithDetails[]>({
     queryKey: ['/api/submissions/pending'],
-    queryFn: getQueryFn({ on401: "throw" }),
+    queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
   if (isLoading) {

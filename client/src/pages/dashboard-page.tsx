@@ -8,6 +8,8 @@ import PendingReviewCard from "@/components/dashboard/pending-review-card";
 import AnalyticsPreview from "@/components/dashboard/analytics-preview";
 import CreateAssignmentModal from "@/components/assignments/create-assignment-modal";
 import { useQuery } from "@tanstack/react-query";
+import { getQueryFn } from "@/lib/queryClient";
+import { AssignmentWithStats, SubmissionWithDetails } from "@shared/schema";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -16,18 +18,34 @@ export default function DashboardPage() {
   // Only fetch these queries if user is a teacher
   const isTeacher = user?.role === 'teacher';
   
-  const { data: pendingReviews } = useQuery({
+  const { data: pendingReviews = [] } = useQuery<SubmissionWithDetails[]>({
     queryKey: ['/api/submissions/pending'],
+    queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: isTeacher,
   });
   
-  const { data: recentAssignments } = useQuery({
+  const { data: recentAssignments = [] } = useQuery<AssignmentWithStats[]>({
     queryKey: ['/api/assignments/recent'],
+    queryFn: getQueryFn({ on401: "throw" }),
   });
   
+  // Define the StudentStats type
+  type StudentStats = {
+    pendingAssignments: number;
+    completedAssignments: number;
+    averageScore: number;
+    classRank: string;
+  };
+
   // Student specific queries
-  const { data: studentStats } = useQuery({
+  const { data: studentStats = { 
+    pendingAssignments: 0, 
+    completedAssignments: 0, 
+    averageScore: 0, 
+    classRank: 'N/A' 
+  } } = useQuery<StudentStats>({
     queryKey: ['/api/student/stats'],
+    queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !isTeacher,
   });
 
