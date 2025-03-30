@@ -32,41 +32,36 @@ export async function generateChatResponse(messages: { role: string; content: st
       safetySettings,
     });
 
-    // Start a chat
-    const chat = model.startChat({
-      history: messages.slice(0, -1).map(msg => ({
-        role: msg.role === "user" ? "user" : "model",
-        parts: [{ text: msg.content }],
-      })),
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
-      },
-    });
+    // For Gemini, we need to use a simpler approach since it doesn't support chat history like OpenAI
+    // Convert the conversation to a single prompt
+    const formattedMessages = messages.map(msg => 
+      `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
+    ).join('\n\n');
+    
+    // Create the full prompt with context
+    const prompt = `
+The following is a conversation between a student/teacher and an AI teaching assistant.
+The AI assistant provides helpful, accurate, and educational information.
 
-    // Get the last message content
-    const lastMessage = messages[messages.length - 1].content;
+${formattedMessages}
 
-    // Generate a response
-    const result = await chat.sendMessage(lastMessage);
-    const response = await result.response;
+User: `;
+
+    // Generate the completion
+    const result = await model.generateContent(prompt);
+    const response = result.response;
     const text = response.text();
 
-    return { success: true, text };
+    // Return the generated response
+    return text.replace(/^Assistant: /, '').trim();
   } catch (error: any) {
     console.error("Error generating chat response:", error);
-    return { success: false, error: error.message || "Failed to generate response" };
+    throw new Error(`Failed to generate response: ${error.message}`);
   }
 }
 
-// Grade assignment using Gemini
-export async function gradeAssignment(
-  submissionText: string,
-  assignmentPrompt: string,
-  rubric: string,
-) {
+// Improve feedback for submissions
+export async function generateImprovement(studentWork: string, initialFeedback: string): Promise<string> {
   try {
     const model = genAI.getGenerativeModel({ 
       model: "gemini-1.5-pro",
@@ -74,101 +69,89 @@ export async function gradeAssignment(
     });
 
     const prompt = `
-      You are an expert grader for educational assignments. Grade the following student submission based on the assignment prompt and rubric.
-      
-      ASSIGNMENT PROMPT:
-      ${assignmentPrompt}
-      
-      RUBRIC:
-      ${rubric}
-      
-      STUDENT SUBMISSION:
-      ${submissionText}
-      
-      Provide a detailed assessment in the following JSON format:
-      {
-        "score": (a number between 0-100),
-        "feedback": {
-          "strengths": [(list of specific strengths in the submission)],
-          "areas_for_improvement": [(list of specific areas for improvement)],
-          "comments": "(general constructive feedback)"
-        },
-        "rubric_breakdown": {
-          "(rubric_category)": {
-            "score": (points earned for this category),
-            "max_points": (maximum possible points for this category),
-            "comments": "(specific feedback for this category)"
-          }
-        }
-      }
-      
-      Your assessment should be fair, based solely on the rubric criteria, and provide constructive feedback that helps the student improve.
-      Only return the JSON with no additional text or explanations outside the JSON structure.
-    `;
+You are an educational assistant helping teachers provide better feedback to their students.
+
+Original student work:
+"""
+${studentWork}
+"""
+
+Initial feedback from teacher:
+"""
+${initialFeedback}
+"""
+
+Please improve this feedback to make it more:
+1. Specific and actionable
+2. Encouraging and supportive
+3. Focused on learning goals
+4. Balanced between strengths and areas for improvement
+
+Provide the improved feedback:`;
 
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const response = result.response;
+    return response.text().trim();
+  } catch (error: any) {
+    console.error("Error improving feedback:", error);
+    throw new Error(`Failed to improve feedback: ${error.message}`);
+  }
+}
 
-    try {
-      // Try to parse the response as JSON
-      const jsonResponse = JSON.parse(text);
-      return { success: true, data: jsonResponse };
-    } catch (parseError) {
-      // If parsing fails, return the raw text
-      console.error("Failed to parse Gemini response as JSON:", parseError);
-      return { 
-        success: false, 
-        error: "Failed to parse grading response",
-        rawResponse: text 
-      };
-    }
+// Grade an assignment - using rubric
+export async function gradeAssignment(submission: string, assignmentDetails: any): Promise<any> {
+  try {
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-pro",
+      safetySettings,
+    });
+
+    // Construct the rubric information
+    const rubricInfo = assignmentDetails.rubric
+      ? `Grading Rubric:
+${assignmentDetails.rubric}`
+      : 'Use a standard academic grading approach.';
+
+    const prompt = `
+You are an AI assistant helping a teacher grade student assignments.
+
+Assignment Details:
+"""
+${assignmentDetails.title}
+${assignmentDetails.description}
+"""
+
+${rubricInfo}
+
+Student Submission:
+"""
+${submission}
+"""
+
+Please evaluate this submission and provide:
+1. A numerical score (0-100)
+2. Strengths (list 2-3 bullet points)
+3. Areas for improvement (list 2-3 bullet points)
+4. Brief comments explaining the evaluation
+
+Format your response as plain text with clear sections.`;
+
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const text = response.text().trim();
+
+    // Parse the response
+    // This is a simplified parsing approach - in a real app you might want more robust parsing
+    const scoreMatch = text.match(/score:?\s*(\d+)/i);
+    const score = scoreMatch ? parseInt(scoreMatch[1]) : null;
+
+    return {
+      text,
+      score,
+      generatedBy: 'gemini'
+    };
   } catch (error: any) {
     console.error("Error grading assignment:", error);
-    return { success: false, error: error.message || "Failed to grade assignment" };
-  }
-}
-
-// Generate suggested improvement for a student submission
-export async function generateImprovement(
-  submissionText: string,
-  assignmentPrompt: string,
-  feedbackText: string
-) {
-  try {
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-pro",
-      safetySettings,
-    });
-
-    const prompt = `
-      You are an educational AI assistant. Help improve the following student submission based on the assignment prompt and teacher feedback.
-      
-      ASSIGNMENT PROMPT:
-      ${assignmentPrompt}
-      
-      STUDENT SUBMISSION:
-      ${submissionText}
-      
-      TEACHER FEEDBACK:
-      ${feedbackText}
-      
-      Provide specific suggestions for how the student could improve their submission. Include:
-      1. Concrete examples of improvements
-      2. Alternative phrasings or approaches
-      3. Additional concepts or evidence they could incorporate
-      4. Corrected versions of problematic sections
-      
-      Be supportive, constructive, and specific in your guidance. Focus on helping the student learn and improve.
-    `;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    return { success: true, text };
-  } catch (error: any) {
-    console.error("Error generating improvement suggestions:", error);
-    return { success: false, error: error.message || "Failed to generate improvement suggestions" };
+    throw new Error(`Failed to grade assignment: ${error.message}`);
   }
 }

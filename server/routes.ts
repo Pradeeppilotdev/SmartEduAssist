@@ -573,13 +573,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request format. 'messages' array is required." });
       }
       
-      const response = await generateChatResponse(messages);
-      
-      if (!response.success) {
-        return res.status(500).json({ message: response.error || "Failed to generate chat response" });
-      }
-      
-      return res.json({ response: response.text });
+      const responseText = await generateChatResponse(messages);
+      return res.json({ response: responseText });
     } catch (error) {
       console.error("Error in chat endpoint:", error);
       return res.status(500).json({ message: "Internal server error" });
@@ -592,24 +587,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const { submissionText, assignmentPrompt, rubric } = req.body;
+      const { submissionText, assignmentDetails } = req.body;
       
-      if (!submissionText || !assignmentPrompt || !rubric) {
+      if (!submissionText || !assignmentDetails) {
         return res.status(400).json({ 
-          message: "Missing required fields. 'submissionText', 'assignmentPrompt', and 'rubric' are required." 
+          message: "Missing required fields. 'submissionText' and 'assignmentDetails' are required." 
         });
       }
       
-      const result = await gradeAssignment(submissionText, assignmentPrompt, rubric);
-      
-      if (!result.success) {
-        return res.status(500).json({ 
-          message: result.error || "Failed to grade assignment",
-          rawResponse: result.rawResponse 
-        });
-      }
-      
-      return res.json(result.data);
+      const result = await gradeAssignment(submissionText, assignmentDetails);
+      return res.json(result);
     } catch (error) {
       console.error("Error in grading endpoint:", error);
       return res.status(500).json({ message: "Internal server error" });
@@ -622,21 +609,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const { submissionText, assignmentPrompt, feedbackText } = req.body;
+      const { studentWork, initialFeedback } = req.body;
       
-      if (!submissionText || !assignmentPrompt || !feedbackText) {
+      if (!studentWork || !initialFeedback) {
         return res.status(400).json({ 
-          message: "Missing required fields. 'submissionText', 'assignmentPrompt', and 'feedbackText' are required." 
+          message: "Missing required fields. 'studentWork' and 'initialFeedback' are required." 
         });
       }
       
-      const result = await generateImprovement(submissionText, assignmentPrompt, feedbackText);
-      
-      if (!result.success) {
-        return res.status(500).json({ message: result.error || "Failed to generate improvement suggestions" });
-      }
-      
-      return res.json({ suggestions: result.text });
+      const improvedFeedback = await generateImprovement(studentWork, initialFeedback);
+      return res.json({ suggestions: improvedFeedback });
     } catch (error) {
       console.error("Error in improvement endpoint:", error);
       return res.status(500).json({ message: "Internal server error" });
