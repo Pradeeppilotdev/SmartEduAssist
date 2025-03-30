@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { insertAssignmentSchema } from "@shared/schema";
+import { insertAssignmentSchema, type Class } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -25,8 +25,10 @@ const createAssignmentSchema = z.object({
   description: z.string().min(1, "Description is required"),
   classId: z.number().or(z.string().transform(value => parseInt(value, 10))),
   type: z.string().min(1, "Type is required"),
-  dueDate: z.string().min(1, "Due date is required"),
+  dueDate: z.string().min(1, "Due date is required")
+    .transform(value => new Date(value).toISOString()), // Convert to ISO string for the server
   status: z.string().default("open"),
+  rubric: z.any().optional(), // Make rubric optional
 });
 
 type FormValues = z.infer<typeof createAssignmentSchema>;
@@ -36,7 +38,7 @@ export default function CreateAssignmentModal({ isOpen, onClose }: CreateAssignm
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: classes } = useQuery({
+  const { data: classes = [] } = useQuery<Class[]>({
     queryKey: ['/api/classes'],
     enabled: isOpen, // Only fetch when modal is open
   });
@@ -129,7 +131,7 @@ export default function CreateAssignmentModal({ isOpen, onClose }: CreateAssignm
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {classes?.map(cls => (
+                      {Array.isArray(classes) && classes.map((cls: Class) => (
                         <SelectItem key={cls.id} value={cls.id.toString()}>
                           {cls.name}
                         </SelectItem>
