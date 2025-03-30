@@ -1,17 +1,22 @@
 {
-  "version": 2,
-  "buildCommand": "node build.js",
-  "outputDirectory": "client/dist",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "framework": null,
+  "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.js" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/api/(.*)", "destination": "/api" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization" }
+      ]
+    }
   ],
   "env": {
-    "SESSION_SECRET": "@session_secret",
-    "NODE_ENV": "production",
-    "OPENAI_API_KEY": "@openai_api_key",
-    "GEMINI_API_KEY": "@gemini_api_key"
+    "NODE_ENV": "production"
   }
 }

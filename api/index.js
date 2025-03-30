@@ -1,26 +1,10 @@
 // Vercel serverless API handler
-const express = require('express');
-const dotenv = require('dotenv');
-const cookieParser = require('cookie-parser');
-const cors = require('cors');
-const compression = require('compression');
+// Import the shared app configuration
+const app = require('./_app');
 
-// Load environment variables
-dotenv.config();
-
-// Create Express app
-const app = express();
-
-// Apply middleware
-app.use(compression());
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://grade-assist-ai.vercel.app', /\.vercel\.app$/] 
-    : 'http://localhost:5000',
-  credentials: true
-}));
-app.use(express.json());
-app.use(cookieParser());
+// Import AI helper functions
+const { generateChatResponse, generateImprovement } = require('./gemini');
+const { gradeSubmission } = require('./openai');
 
 // Create routes for API endpoints
 app.post('/api/ai/chat', async (req, res) => {
@@ -30,16 +14,19 @@ app.post('/api/ai/chat', async (req, res) => {
       return res.status(400).json({ error: 'Invalid messages array' });
     }
     
-    // Proxy request to Gemini
+    // Verify API key
     if (!process.env.GEMINI_API_KEY) {
       return res.status(500).json({ error: 'Missing Gemini API key' });
     }
     
-    // Basic response for testing
-    res.json({ 
-      response: "This is a placeholder response from the Vercel serverless function. In production, this would connect to Gemini.",
-      success: true 
-    });
+    // Call Gemini API
+    const result = await generateChatResponse(messages);
+    
+    if (!result.success) {
+      return res.status(500).json({ error: result.error });
+    }
+    
+    res.json(result);
   } catch (error) {
     console.error('Chat API error:', error);
     res.status(500).json({ error: 'Failed to process chat request' });
@@ -53,26 +40,19 @@ app.post('/api/ai/grade', async (req, res) => {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
     
-    // Proxy request to OpenAI
+    // Verify API key
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({ error: 'Missing OpenAI API key' });
     }
     
-    // Basic response for testing
-    res.json({
-      score: 85,
-      feedback: {
-        strengths: ["Good organization", "Clear explanations"],
-        improvements: ["Could add more examples", "Some grammar errors"],
-        comments: "Overall, a good submission that demonstrates understanding of the material."
-      },
-      rubricScores: { 
-        "content": 4, 
-        "organization": 4, 
-        "grammar": 3, 
-        "creativity": 4 
-      }
-    });
+    // Call OpenAI to grade the submission
+    const result = await gradeSubmission(submission, assignment);
+    
+    if (result.error) {
+      return res.status(500).json({ error: result.error });
+    }
+    
+    res.json(result);
   } catch (error) {
     console.error('Grading API error:', error);
     res.status(500).json({ error: 'Failed to process grading request' });
@@ -86,15 +66,19 @@ app.post('/api/ai/improve', async (req, res) => {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
     
-    // Check for API keys
+    // Verify API key
     if (!process.env.GEMINI_API_KEY) {
       return res.status(500).json({ error: 'Missing Gemini API key' });
     }
     
-    // Basic response for testing
-    res.json({
-      improvements: "Here are some suggestions to improve your work: 1) Add more specific examples to support your main points, 2) Consider reorganizing paragraph 3 to flow better with your conclusion, 3) Review grammar and punctuation throughout."
-    });
+    // Call Gemini API for improvement suggestions
+    const result = await generateImprovement(studentWork, initialFeedback);
+    
+    if (!result.success) {
+      return res.status(500).json({ error: result.error });
+    }
+    
+    res.json(result);
   } catch (error) {
     console.error('Improvement API error:', error);
     res.status(500).json({ error: 'Failed to process improvement request' });
@@ -295,5 +279,19 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Internal server error' });
 });
 
-// Export for Vercel serverless function
+// For Vercel serverless functions, we need to properly export the handler function
+// Setup server for local development
+const server = app.listen(process.env.PORT || 3000, () => {
+  console.log(`API server running on port ${process.env.PORT || 3000}`);
+});
+
+// Handle proper shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Server closed');
+  });
+});
+
+// Export API handler for Vercel serverless environment
 module.exports = app;
