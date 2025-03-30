@@ -11,3 +11,41 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Custom styles for error pages and loading states */
+.error-page {
+  @apply min-h-screen flex items-center justify-center flex-col p-6 text-center;
+}
+
+.error-page h1 {
+  @apply text-4xl font-bold mb-4 text-primary;
+}
+
+.error-page p {
+  @apply text-lg mb-8 max-w-lg;
+}
+
+.loading-spinner {
+  @apply animate-spin h-10 w-10 text-primary;
+}
+
+/* Improved responsive styles for mobile */
+@media (max-width: 640px) {
+  .card-grid {
+    @apply grid-cols-1;
+  }
+  
+  .mobile-hidden {
+    @apply hidden;
+  }
+  
+  .mobile-only {
+    @apply block;
+  }
+}
+
+/* Production overrides for Vercel deployment */
+.deploy-notice {
+  @apply fixed bottom-4 left-4 px-4 py-2 bg-primary text-white text-sm rounded-md shadow-lg;
+  z-index: 9999;
+}
